@@ -109,8 +109,8 @@ static bool usb_drive_set_enabled(bool enabled) {
     if (tud_connected()) {
         return false;
     }
-    filesystem_set_internal_writable_by_usb(enabled);
-    storage_usb_is_enabled = enabled;
+    filesystem_set_internal_writable_by_usb(true);
+    storage_usb_is_enabled = true;
     return true;
 }
 
