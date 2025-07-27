@@ -4,8 +4,9 @@ ifdef VARIANT_DIR
 # the path as the variant name.
 VARIANT ?= $(notdir $(VARIANT_DIR:/=))
 else
-# If not given on the command line, then default to standard.
-VARIANT ?= standard
+# CIRCUITPY-CHANGE: default variant is coverage
+# If not given on the command line, then default to coverage.
+VARIANT ?= coverage
 VARIANT_DIR ?= variants/$(VARIANT)
 endif
 
@@ -47,6 +48,10 @@ INC += -I$(BUILD)
 CWARN = -Wall -Werror
 CWARN += -Wextra -Wno-unused-parameter -Wpointer-arith -Wdouble-promotion -Wfloat-conversion
 CFLAGS += $(INC) $(CWARN) -std=gnu99 -DUNIX $(COPT) -I$(VARIANT_DIR) $(CFLAGS_EXTRA)
+
+# Force the use of 64-bits for file sizes in C library functions on 32-bit platforms.
+# This option has no effect on 64-bit builds.
+CFLAGS += -D_FILE_OFFSET_BITS=64
 
 # Debugging/Optimization
 ifdef DEBUG
@@ -168,7 +173,7 @@ ifeq ($(MICROPY_STANDALONE),1)
 # Build libffi from source.
 GIT_SUBMODULES += lib/libffi
 DEPLIBS += libffi
-LIBFFI_CFLAGS := -I$(shell ls -1d $(BUILD)/lib/libffi/out/lib/libffi-*/include)
+LIBFFI_CFLAGS := -I$(shell ls -1d $(BUILD)/lib/libffi/include)
  ifeq ($(MICROPY_FORCE_32BIT),1)
   LIBFFI_LDFLAGS = $(BUILD)/lib/libffi/out/lib32/libffi.a
  else

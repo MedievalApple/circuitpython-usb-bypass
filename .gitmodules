@@ -7,7 +7,7 @@
 	url = https://github.com/micropython/axtls.git
 [submodule "lib/libffi"]
 	path = lib/libffi
-	url = https://github.com/atgreen/libffi
+	url = https://github.com/libffi/libffi
 [submodule "lib/berkeley-db-1.xx"]
 	path = lib/berkeley-db-1.xx
 	url = https://github.com/micropython/berkeley-db-1.xx
@@ -143,10 +143,11 @@
 [submodule "ports/espressif/esp-idf"]
 	path = ports/espressif/esp-idf
 	url = https://github.com/adafruit/esp-idf.git
-	branch = circuitpython-v5.3.1
+	branch = circuitpython-v5.4.1
 [submodule "ports/espressif/esp-protocols"]
 	path = ports/espressif/esp-protocols
-	url = https://github.com/espressif/esp-protocols.git
+	url = https://github.com/adafruit/esp-protocols.git
+	branch = circuitpython
 [submodule "ports/espressif/esp-camera"]
 	path = ports/espressif/esp-camera
 	url = https://github.com/adafruit/esp32-camera.git
@@ -171,7 +172,8 @@
 	url = https://github.com/adafruit/Adafruit_CircuitPython_SimpleMath
 [submodule "ports/raspberrypi/sdk"]
 	path = ports/raspberrypi/sdk
-	url = https://github.com/raspberrypi/pico-sdk.git
+	url = https://github.com/adafruit/pico-sdk.git
+	branch = force_inline_critical_section_2.1.1
 [submodule "data/nvm.toml"]
 	path = data/nvm.toml
 	url = https://github.com/adafruit/nvm.toml.git
@@ -311,7 +313,7 @@
 [submodule "ports/raspberrypi/lib/lwip"]
 	path = ports/raspberrypi/lib/lwip
 	url = https://github.com/adafruit/lwip.git
-	branch = circuitpython8
+	branch = circuitpython9
 [submodule "lib/mbedtls"]
 	path = lib/mbedtls
 	url = https://github.com/ARMmbed/mbedtls.git
@@ -345,6 +347,7 @@
 [submodule "ports/raspberrypi/lib/Pico-PIO-USB"]
 	path = ports/raspberrypi/lib/Pico-PIO-USB
 	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
+	branch = main
 [submodule "lib/micropython-lib"]
 	path = lib/micropython-lib
 	url = https://github.com/micropython/micropython-lib.git
@@ -406,3 +409,9 @@
 [submodule "frozen/Adafruit_CircuitPython_Wiznet5k"]
 	path = frozen/Adafruit_CircuitPython_Wiznet5k
 	url = https://github.com/adafruit/Adafruit_CircuitPython_Wiznet5k
+[submodule "ports/analog/msdk"]
+	path = ports/analog/msdk
+	url = https://github.com/analogdevicesinc/msdk.git
+[submodule "ports/espressif/microros-lib"]
+	path = ports/espressif/microros-lib
+	url = https://github.com/hierophect/microros-lib.git

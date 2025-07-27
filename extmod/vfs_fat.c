@@ -38,6 +38,7 @@
 
 // CIRCUITPY-CHANGE: extra includes
 #include <string.h>
+#include "py/gc.h"
 #include "py/obj.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
@@ -133,6 +134,11 @@ static mp_obj_t fat_vfs_mkfs(mp_obj_t bdev_in) {
         mp_raise_OSError_fresult(res);
     }
 
+    // set the filesystem label if it's configured
+    #ifdef MICROPY_HW_FLASH_FS_LABEL
+    f_setlabel(&vfs->fatfs, MICROPY_HW_FLASH_FS_LABEL);
+    #endif
+
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_mkfs_fun_obj, fat_vfs_mkfs);
@@ -163,7 +169,7 @@ static mp_obj_t mp_vfs_fat_ilistdir_it_iternext(mp_obj_t self_in) {
         // make 4-tuple with info about this entry
         mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(4, NULL));
         if (self->is_str) {
-            t->items[0] = mp_obj_new_str(fn, strlen(fn));
+            t->items[0] = mp_obj_new_str_from_cstr(fn);
         } else {
             t->items[0] = mp_obj_new_bytes((const byte *)fn, strlen(fn));
         }
@@ -322,7 +328,7 @@ static mp_obj_t fat_vfs_getcwd(mp_obj_t vfs_in) {
         // CIRCUITPY-CHANGE
         mp_raise_OSError_fresult(res);
     }
-    return mp_obj_new_str(buf, strlen(buf));
+    return mp_obj_new_str_from_cstr(buf);
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_getcwd_obj, fat_vfs_getcwd);
 
@@ -342,7 +348,10 @@ static mp_obj_t fat_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
         FRESULT res = f_stat(&self->fatfs, path, &fno);
         if (res != FR_OK) {
             // CIRCUITPY-CHANGE
-            mp_raise_OSError_fresult(res);
+            if (gc_alloc_possible()) {
+                mp_raise_OSError_fresult(res);
+            }
+            return mp_const_none;
         }
     }
 
@@ -484,12 +493,9 @@ static mp_obj_t vfs_fat_getreadonly(mp_obj_t self_in) {
     return mp_obj_new_bool(!filesystem_is_writable_by_python(self));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_getreadonly_obj, vfs_fat_getreadonly);
-static const mp_obj_property_t fat_vfs_readonly_obj = {
-    .base.type = &mp_type_property,
-    .proxy = {(mp_obj_t)&fat_vfs_getreadonly_obj,
-              MP_ROM_NONE,
-              MP_ROM_NONE},
-};
+
+static MP_PROPERTY_GETTER(fat_vfs_readonly_obj,
+    (mp_obj_t)&fat_vfs_getreadonly_obj);
 
 #if MICROPY_FATFS_USE_LABEL
 static mp_obj_t vfs_fat_getlabel(mp_obj_t self_in) {
@@ -517,12 +523,10 @@ static mp_obj_t vfs_fat_setlabel(mp_obj_t self_in, mp_obj_t label_in) {
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(fat_vfs_setlabel_obj, vfs_fat_setlabel);
-static const mp_obj_property_t fat_vfs_label_obj = {
-    .base.type = &mp_type_property,
-    .proxy = {(mp_obj_t)&fat_vfs_getlabel_obj,
-              (mp_obj_t)&fat_vfs_setlabel_obj,
-              MP_ROM_NONE},
-};
+
+static MP_PROPERTY_GETSET(fat_vfs_label_obj,
+    (mp_obj_t)&fat_vfs_getlabel_obj,
+    (mp_obj_t)&fat_vfs_setlabel_obj);
 #endif
 
 static const mp_rom_map_elem_t fat_vfs_locals_dict_table[] = {

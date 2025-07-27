@@ -75,16 +75,22 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
         self->flags |= BLE_GATT_CHR_F_WRITE_AUTHEN;
     }
 
-    if (gc_alloc_possible()) {
-        self->current_value = m_malloc(max_length);
-    } else {
-        self->current_value = port_malloc(max_length, false);
-        if (self->current_value == NULL) {
-            reset_into_safe_mode(SAFE_MODE_NO_HEAP);
+    // If max_length is 0, then no storage is allocated.
+    if (max_length > 0) {
+        if (gc_alloc_possible()) {
+            self->current_value = m_malloc_without_collect(max_length);
+        } else {
+            self->current_value = port_malloc(max_length, false);
+            if (self->current_value == NULL) {
+                reset_into_safe_mode(SAFE_MODE_NO_HEAP);
+            }
         }
     }
     self->current_value_alloc = max_length;
     self->current_value_len = 0;
+
+    self->max_length = max_length;
+    self->fixed_length = fixed_length;
 
     if (initial_value_bufinfo != NULL) {
         common_hal_bleio_characteristic_set_value(self, initial_value_bufinfo);
@@ -96,9 +102,6 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
         self->descriptor_list = NULL;
     }
 
-    self->max_length = max_length;
-    self->fixed_length = fixed_length;
-
     if (service->is_remote) {
         // If the service is remote, we're buffering incoming notifications and indications.
         self->handle = handle;
@@ -109,23 +112,25 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
 }
 
 bool common_hal_bleio_characteristic_deinited(bleio_characteristic_obj_t *self) {
-    return self->current_value == NULL;
+    return self->handle == BLEIO_HANDLE_INVALID;
 }
 
 void common_hal_bleio_characteristic_deinit(bleio_characteristic_obj_t *self) {
     if (common_hal_bleio_characteristic_deinited(self)) {
         return;
     }
-    if (self->current_value == NULL) {
-        return;
+    if (self->current_value != NULL) {
+        if (gc_nbytes(self->current_value) > 0) {
+            m_free(self->current_value);
+        } else {
+            port_free(self->current_value);
+        }
+
+        self->current_value = NULL;
     }
 
-    if (gc_nbytes(self->current_value) > 0) {
-        m_free(self->current_value);
-    } else {
-        port_free(self->current_value);
-    }
-    self->current_value = NULL;
+    // Used to indicate deinit.
+    self->handle = BLEIO_HANDLE_INVALID;
 }
 
 mp_obj_tuple_t *common_hal_bleio_characteristic_get_descriptors(bleio_characteristic_obj_t *self) {
@@ -172,7 +177,6 @@ void common_hal_bleio_characteristic_set_value(bleio_characteristic_obj_t *self,
         }
     } else {
         // Validate data length for local characteristics only.
-        // TODO: Test this once we can get servers going.
         if (self->fixed_length && bufinfo->len != self->max_length) {
             mp_raise_ValueError(MP_ERROR_TEXT("Value length != required fixed length"));
         }

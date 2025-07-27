@@ -51,6 +51,13 @@
 #define M_PI (3.14159265358979323846)
 #endif
 
+// Workaround a bug in recent MSVC where NAN is no longer constant.
+// (By redefining back to the previous MSVC definition of NAN)
+#if defined(_MSC_VER) && _MSC_VER >= 1942
+#undef NAN
+#define NAN (-(float)(((float)(1e+300 * 1e+300)) * 0.0F))
+#endif
+
 typedef struct _mp_obj_float_t {
     mp_obj_base_t base;
     mp_float_t value;
@@ -186,8 +193,9 @@ static mp_obj_t float_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs
     return mp_obj_float_binary_op(op, lhs_val, rhs_in);
 }
 
+// CIRCUITPY-CHANGE: Diagnose json.dump on invalid types
 MP_DEFINE_CONST_OBJ_TYPE(
-    mp_type_float, MP_QSTR_float, MP_TYPE_FLAG_EQ_NOT_REFLEXIVE | MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE,
+    mp_type_float, MP_QSTR_float, MP_TYPE_FLAG_EQ_NOT_REFLEXIVE | MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE | MP_TYPE_FLAG_PRINT_JSON,
     make_new, float_make_new,
     print, float_print,
     unary_op, float_unary_op,
@@ -197,9 +205,8 @@ MP_DEFINE_CONST_OBJ_TYPE(
 #if MICROPY_OBJ_REPR != MICROPY_OBJ_REPR_C && MICROPY_OBJ_REPR != MICROPY_OBJ_REPR_D
 
 mp_obj_t mp_obj_new_float(mp_float_t value) {
-    // Don't use mp_obj_malloc here to avoid extra function call overhead.
-    mp_obj_float_t *o = m_new_obj(mp_obj_float_t);
-    o->base.type = &mp_type_float;
+    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
+    mp_obj_float_t *o = mp_obj_malloc(mp_obj_float_t, &mp_type_float);
     o->value = value;
     return MP_OBJ_FROM_PTR(o);
 }

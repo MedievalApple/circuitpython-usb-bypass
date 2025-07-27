@@ -156,7 +156,7 @@ void supervisor_stop_bluetooth_serial(void) {
 }
 
 bool ble_serial_connected(void) {
-    return _tx_packet_buffer.conn_handle != BLEIO_HANDLE_INVALID;
+    return common_hal_bleio_packet_buffer_connected(&_tx_packet_buffer);
 }
 
 uint32_t ble_serial_available(void) {

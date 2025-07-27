@@ -91,6 +91,40 @@ uint8_t displayio_colorconverter_compute_hue(uint32_t color_rgb888) {
     return hue;
 }
 
+uint8_t displayio_colorconverter_compute_sixcolor(uint32_t color_rgb888) {
+    // This is DDX=1, the default for the displays.
+    uint8_t chroma = displayio_colorconverter_compute_chroma(color_rgb888);
+    if (chroma >= 64) {
+        uint8_t hue = displayio_colorconverter_compute_hue(color_rgb888);
+        // Red 0
+        if (hue < 10) {
+            return 0x3;
+        }
+        // Yellow 42
+        if (hue < 42 + 21) {
+            return 0x2;
+        }
+        // Green 85
+        if (hue < 85 + 42) {
+            return 0x6;
+        }
+        // Blue 170
+        if (hue < 170 + 42) {
+            return 0x5;
+        }
+
+        // The rest is red to 255
+        return 0x3;
+    } else {
+        uint8_t luma = displayio_colorconverter_compute_luma(color_rgb888);
+        if (luma >= 128) {
+            return 0x1; // White
+        } else {
+            return 0x0; // Black
+        }
+    }
+}
+
 uint8_t displayio_colorconverter_compute_sevencolor(uint32_t color_rgb888) {
     // This is DDX=1, the default for the displays.
     uint8_t chroma = displayio_colorconverter_compute_chroma(color_rgb888);
@@ -197,9 +231,12 @@ uint32_t displayio_colorconverter_convert_pixel(displayio_colorspace_t colorspac
             pixel = __builtin_bswap16(pixel);
             MP_FALLTHROUGH;
         case DISPLAYIO_COLORSPACE_RGB555: {
-            uint32_t r8 = (pixel >> 10) << 3;
-            uint32_t g8 = ((pixel >> 5) << 3) & 0xff;
-            uint32_t b8 = (pixel << 3) & 0xff;
+            uint32_t r8 = (pixel >> 10) & 0x1f;
+            uint32_t g8 = (pixel >> 5) & 0x1f;
+            uint32_t b8 = pixel & 0x1f;
+            r8 = (r8 << 3) | ((r8 >> 2) & 0b111);
+            g8 = (g8 << 3) | ((g8 >> 2) & 0b111);
+            b8 = (b8 << 3) | ((b8 >> 2) & 0b111);
             pixel = (r8 << 16) | (g8 << 8) | b8;
         }
         break;
@@ -219,9 +256,12 @@ uint32_t displayio_colorconverter_convert_pixel(displayio_colorspace_t colorspac
             pixel = __builtin_bswap16(pixel);
             MP_FALLTHROUGH;
         case DISPLAYIO_COLORSPACE_BGR555: {
-            uint32_t b8 = (pixel >> 10) << 3;
-            uint32_t g8 = ((pixel >> 5) << 3) & 0xff;
-            uint32_t r8 = (pixel << 3) & 0xff;
+            uint32_t b8 = (pixel >> 10) & 0x1f;
+            uint32_t g8 = (pixel >> 5) & 0x1f;
+            uint32_t r8 = pixel & 0x1f;
+            r8 = (r8 << 3) | ((r8 >> 2) & 0b111);
+            g8 = (g8 << 3) | ((g8 >> 2) & 0b111);
+            b8 = (b8 << 3) | ((b8 >> 2) & 0b111);
             pixel = (r8 << 16) | (g8 << 8) | b8;
         }
         break;
@@ -292,7 +332,7 @@ void displayio_convert_color(const _displayio_colorspace_t *colorspace, bool dit
         output_color->pixel = (luma >> colorspace->grayscale_bit) & bitmask;
         output_color->opaque = true;
         return;
-    } else if (colorspace->depth == 32) {
+    } else if (colorspace->depth == 32 || colorspace->depth == 24) {
         output_color->pixel = pixel;
         output_color->opaque = true;
         return;
@@ -303,7 +343,9 @@ void displayio_convert_color(const _displayio_colorspace_t *colorspace, bool dit
         return;
     } else if (colorspace->depth == 4) {
         uint8_t packed;
-        if (colorspace->sevencolor) {
+        if (colorspace->sixcolor) {
+            packed = displayio_colorconverter_compute_sixcolor(pixel);
+        } else if (colorspace->sevencolor) {
             packed = displayio_colorconverter_compute_sevencolor(pixel);
         } else {
             packed = displayio_colorconverter_compute_rgbd(pixel);

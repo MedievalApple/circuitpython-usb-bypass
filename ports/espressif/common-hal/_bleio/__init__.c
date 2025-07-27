@@ -31,7 +31,7 @@ static uint64_t _timeout_start_time;
 
 background_callback_t bleio_background_callback;
 
-void bleio_user_reset() {
+void bleio_user_reset(void) {
     // Stop any user scanning or advertising.
     common_hal_bleio_adapter_stop_scan(&common_hal_bleio_adapter_obj);
     common_hal_bleio_adapter_stop_advertising(&common_hal_bleio_adapter_obj);
@@ -43,7 +43,7 @@ void bleio_user_reset() {
 }
 
 // Turn off BLE on a reset or reload.
-void bleio_reset() {
+void bleio_reset(void) {
     // Set this explicitly to save data.
     if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
         return;
@@ -102,6 +102,9 @@ void check_nimble_error(int rc, const char *file, size_t line) {
             return;
         case BLE_HS_ENOTCONN:
             mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
+            return;
+        case BLE_HS_EALREADY:
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Already in progress"));
             return;
         default:
             #if CIRCUITPY_VERBOSE_BLE || CIRCUITPY_DEBUG

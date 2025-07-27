@@ -21,7 +21,7 @@ CIRCUITPY_PWMIO ?= 1
 CIRCUITPY_RGBMATRIX ?= $(CIRCUITPY_DISPLAYIO)
 CIRCUITPY_ROTARYIO ?= 1
 CIRCUITPY_ROTARYIO_SOFTENCODER = 1
-CIRCUITPY_SYNTHIO_MAX_CHANNELS = 12
+CIRCUITPY_SYNTHIO_MAX_CHANNELS = 24
 CIRCUITPY_USB_HOST ?= 1
 CIRCUITPY_USB_VIDEO ?= 1
 
@@ -53,6 +53,9 @@ CIRCUITPY_ALARM ?= 1
 CIRCUITPY_PICODVI ?= 0
 
 CIRCUITPY_TOUCHIO ?= 1
+
+# delay in ms before calling cyw43_arch_init_with_country
+CIRCUITPY_CYW43_INIT_DELAY ?= 1000
 endif
 
 ifeq ($(CHIP_VARIANT),RP2350)
@@ -61,9 +64,11 @@ CIRCUITPY_ALARM = 0
 # Default PICODVI on because it doesn't require much code in RAM to talk to HSTX.
 CIRCUITPY_PICODVI ?= 1
 
-# Our generic touchio uses a pull down and RP2350 A2 hardware doesn't work correctly.
-# So, turn touchio off because it doesn't work.
-CIRCUITPY_TOUCHIO = 0
+# delay in ms before calling cyw43_arch_init_with_country
+CIRCUITPY_CYW43_INIT_DELAY ?= 0
+
+# Audio effects
+CIRCUITPY_AUDIOEFFECTS ?= 1
 endif
 
 INTERNAL_LIBM = 1
